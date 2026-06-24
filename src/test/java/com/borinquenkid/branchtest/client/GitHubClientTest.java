@@ -8,6 +8,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
@@ -29,16 +31,18 @@ class GitHubClientTest {
         client = new GitHubClient(builder.build());
     }
 
+    private static final String USER_JSON = """
+            {"login":"octocat","name":"The Octocat",
+             "avatar_url":"https://avatars.githubusercontent.com/u/583231?v=4",
+             "location":"San Francisco","email":null,
+             "url":"https://api.github.com/users/octocat",
+             "created_at":"2011-01-25T18:44:36Z"}
+            """;
+
     @Test
     void fetchReturnsBothDtos() {
         server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
-                .andRespond(withSuccess("""
-                        {"login":"octocat","name":"The Octocat",
-                         "avatar_url":"https://avatars.githubusercontent.com/u/583231?v=4",
-                         "location":"San Francisco","email":null,
-                         "url":"https://api.github.com/users/octocat",
-                         "created_at":"2011-01-25T18:44:36Z"}
-                        """, MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
                 .andRespond(withSuccess("""
                         [{"name":"Hello-World","url":"https://api.github.com/repos/octocat/Hello-World"}]
@@ -71,5 +75,37 @@ class GitHubClientTest {
 
         assertThatThrownBy(() -> client.fetch("octocat"))
                 .isInstanceOf(GitHubApiException.class);
+    }
+
+    @Test
+    void throwsGitHubApiExceptionForNonHttpNetworkError() {
+        server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
+                .andRespond(withException(new IOException("connection reset")));
+        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        assertThatThrownBy(() -> client.fetch("octocat"))
+                .isInstanceOf(GitHubApiException.class)
+                .hasMessage("GitHub API call failed");
+    }
+
+    @Test
+    void throwsGitHubApiExceptionWhenInterrupted() {
+        // Per StructuredTaskScope.join() contract: "If the current thread's interrupt status
+        // is set at the time of this call... throws InterruptedException."
+        // Set up valid stubs so tasks succeed; the interrupt flag triggers the exception.
+        server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
+                .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        Thread.currentThread().interrupt();
+        try {
+            assertThatThrownBy(() -> client.fetch("octocat"))
+                    .isInstanceOf(GitHubApiException.class)
+                    .hasMessage("GitHub API call interrupted");
+        } finally {
+            Thread.interrupted(); // clear flag restored by the catch block
+        }
     }
 }

@@ -34,7 +34,4 @@ public class CachedUser {
     public String getUsername()         { return username; }
     public UserResponse getResponse()   { return response; }
     public OffsetDateTime getCachedAt() { return cachedAt; }
-
-    public void setResponse(UserResponse response)   { this.response = response; }
-    public void setCachedAt(OffsetDateTime cachedAt) { this.cachedAt = cachedAt; }
 }

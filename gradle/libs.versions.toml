@@ -12,6 +12,7 @@ spring-boot-web            = { module = "org.springframework.boot:spring-boot-st
 spring-boot-data-jpa       = { module = "org.springframework.boot:spring-boot-starter-data-jpa" }
 spring-boot-cache          = { module = "org.springframework.boot:spring-boot-starter-cache" }
 spring-boot-test           = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-restclient-test = { module = "org.springframework.boot:spring-boot-restclient-test" }
 spring-boot-config-proc    = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 
 # ── Persistence (BOM-managed) ────────────────────────────────────────────────

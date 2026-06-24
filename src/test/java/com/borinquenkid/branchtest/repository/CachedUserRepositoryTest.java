@@ -54,7 +54,9 @@ class CachedUserRepositoryTest {
         var found = repository.findFreshByUsername("octocat", OffsetDateTime.now().minusHours(1));
 
         assertThat(found).isPresent();
+        assertThat(found.get().getUsername()).isEqualTo("octocat");
         assertThat(found.get().getResponse().userName()).isEqualTo("octocat");
+        assertThat(found.get().getCachedAt()).isNotNull();
     }
 
     @Test
