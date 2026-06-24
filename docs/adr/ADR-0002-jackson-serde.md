@@ -7,24 +7,75 @@
 
 ## Context
 
-The service receives JSON from two GitHub API endpoints and must return a merged JSON
-response whose field names and date format differ from GitHub's. The key mapping obligations
-are:
+The service calls two GitHub endpoints and merges them into a single shaped response.
+Field names and the date format differ from GitHub's. The transformation is:
 
-| GitHub field   | Response field   | Notes                                    |
-|----------------|------------------|------------------------------------------|
-| `login`        | `user_name`      | rename                                   |
-| `name`         | `display_name`   | rename                                   |
-| `avatar_url`   | `avatar`         | rename                                   |
-| `location`     | `geo_location`   | rename                                   |
-| `email`        | `email`          | pass-through; nullable                   |
-| `url`          | `url`            | pass-through (API URL, not html_url)     |
-| `created_at`   | `created_at`     | **format change**: ISO 8601 → RFC 1123   |
-| repos `name`   | `repos[].name`   | pass-through                             |
-| repos `url`    | `repos[].url`    | pass-through (API URL, not html_url)     |
+### Source 1 — `GET https://api.github.com/users/{username}` (selected fields only)
 
-`created_at` from GitHub: `"2011-01-25T18:44:36Z"` (ISO 8601 / UTC)  
-`created_at` required:   `"Tue, 25 Jan 2011 18:44:36 GMT"` (RFC 1123)
+```jsonc
+{
+  "login":      "octocat",               // → user_name
+  "name":       "The Octocat",           // → display_name
+  "avatar_url": "https://avatars…",      // → avatar        (field renamed)
+  "location":   "San Francisco",         // → geo_location   (field renamed)
+  "email":      null,                    // → email          (nullable, pass-through)
+  "url":        "https://api.github.com/users/octocat",  // → url (API URL, NOT html_url)
+  "created_at": "2011-01-25T18:44:36Z", // → created_at     (FORMAT CHANGE, see below)
+
+  // All other fields (id, node_id, html_url, company, blog, bio, followers, …) are dropped.
+}
+```
+
+### Source 2 — `GET https://api.github.com/users/{username}/repos` (selected fields only)
+
+```jsonc
+[
+  {
+    "name": "boysenberry-repo-1",                                    // → repos[].name
+    "url":  "https://api.github.com/repos/octocat/boysenberry-repo-1" // → repos[].url (NOT html_url)
+
+    // All other fields (id, full_name, html_url, description, fork, …) are dropped.
+  },
+  …
+]
+```
+
+### Output — our response
+
+```jsonc
+{
+  "user_name":    "octocat",
+  "display_name": "The Octocat",
+  "avatar":       "https://avatars.githubusercontent.com/u/583231?v=4",
+  "geo_location": "San Francisco",
+  "email":        null,
+  "url":          "https://api.github.com/users/octocat",
+  "created_at":   "Tue, 25 Jan 2011 18:44:36 GMT",
+  "repos": [
+    {
+      "name": "boysenberry-repo-1",
+      "url":  "https://api.github.com/repos/octocat/boysenberry-repo-1"
+    }
+  ]
+}
+```
+
+### Field mapping summary
+
+| GitHub field        | Transform              | Our field        |
+|---------------------|------------------------|------------------|
+| `login`             | rename                 | `user_name`      |
+| `name`              | rename                 | `display_name`   |
+| `avatar_url`        | rename                 | `avatar`         |
+| `location`          | rename                 | `geo_location`   |
+| `email`             | pass-through (nullable)| `email`          |
+| `url`               | pass-through           | `url`            |
+| `created_at`        | **reformat** ¹         | `created_at`     |
+| repos `name`        | pass-through           | `repos[].name`   |
+| repos `url`         | pass-through ²         | `repos[].url`    |
+
+¹ ISO 8601 `"2011-01-25T18:44:36Z"` → RFC 1123 `"Tue, 25 Jan 2011 18:44:36 GMT"`  
+² `url` is the GitHub API URL (`https://api.github.com/repos/…`), not `html_url` (`https://github.com/…`)
 
 ## Decision
 
