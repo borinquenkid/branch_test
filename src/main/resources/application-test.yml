@@ -1,0 +1,13 @@
+# Test profile — activated via @ActiveProfiles("test") in integration tests.
+# spring.datasource.* and github.base-url are intentionally absent here;
+# they are injected per-test by @DynamicPropertySource.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+logging:
+  level:
+    com.borinquenkid: DEBUG

@@ -15,5 +15,8 @@ build/
 *.jar
 !gradle/wrapper/gradle-wrapper.jar
 
+# Environment — secrets
+.env
+
 # OS
 .DS_Store

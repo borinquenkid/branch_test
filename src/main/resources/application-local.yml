@@ -1,0 +1,10 @@
+# Local development overrides.
+# Datasource values come from .env (read automatically by spring-dotenv).
+# Run: cp .env.example .env, fill in values, then ./gradlew bootRun --args='--spring.profiles.active=local'
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.borinquenkid: DEBUG

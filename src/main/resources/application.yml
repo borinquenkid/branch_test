@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: branch-github-api
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=500,expireAfterWrite=5m
+
+github:
+  base-url: https://api.github.com
+  cache:
+    l2-ttl-hours: 1
+
+logging:
+  level:
+    root: WARN
+    com.borinquenkid: INFO
