@@ -9,11 +9,11 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties(GitHubProperties.class)
 public class RestClientConfig {
 
-    @Bean
-    public RestClient restClient(GitHubProperties props) {
-        return RestClient.builder()
-                .baseUrl(props.baseUrl())
-                .defaultHeader("Accept", "application/vnd.github+json")
-                .build();
-    }
+  @Bean
+  public RestClient restClient(GitHubProperties props) {
+    return RestClient.builder()
+        .baseUrl(props.baseUrl())
+        .defaultHeader("Accept", "application/vnd.github+json")
+        .build();
+  }
 }

@@ -13,17 +13,17 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/users")
 public class GitHubUserController {
 
-    private final GitHubUserService service;
+  private final GitHubUserService service;
 
-    public GitHubUserController(GitHubUserService service) {
-        this.service = service;
-    }
+  public GitHubUserController(GitHubUserService service) {
+    this.service = service;
+  }
 
-    @GetMapping("/{username}")
-    public UserResponse getUser(@PathVariable String username) {
-        if (username.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not be blank");
-        }
-        return service.getUser(username);
+  @GetMapping("/{username}")
+  public UserResponse getUser(@PathVariable String username) {
+    if (username.isBlank()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must not be blank");
     }
+    return service.getUser(username);
+  }
 }

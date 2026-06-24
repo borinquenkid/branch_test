@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.errorprone)
+    alias(libs.plugins.spotless)
     jacoco
 }
 
@@ -115,4 +116,11 @@ tasks.jacocoTestCoverageVerification {
 
 tasks.named("check") {
     dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
+spotless {
+    java {
+        googleJavaFormat("1.35.0")
+        toggleOffOn()
+    }
 }

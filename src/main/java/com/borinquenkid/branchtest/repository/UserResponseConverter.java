@@ -10,19 +10,19 @@ import tools.jackson.databind.ObjectMapper;
 @Component
 public class UserResponseConverter implements AttributeConverter<UserResponse, String> {
 
-    private final ObjectMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
-    public UserResponseConverter(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+  public UserResponseConverter(ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
 
-    @Override
-    public String convertToDatabaseColumn(UserResponse response) {
-        return objectMapper.writeValueAsString(response);
-    }
+  @Override
+  public String convertToDatabaseColumn(UserResponse response) {
+    return objectMapper.writeValueAsString(response);
+  }
 
-    @Override
-    public UserResponse convertToEntityAttribute(String json) {
-        return objectMapper.readValue(json, UserResponse.class);
-    }
+  @Override
+  public UserResponse convertToEntityAttribute(String json) {
+    return objectMapper.readValue(json, UserResponse.class);
+  }
 }

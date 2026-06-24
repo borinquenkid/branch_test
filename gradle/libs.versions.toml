@@ -43,3 +43,4 @@ nullaway                   = { module = "com.uber.nullaway:nullaway",         ve
 spring-boot                = { id = "org.springframework.boot",              version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management",    version.ref = "spring-dependency-management" }
 errorprone                 = { id = "net.ltgt.errorprone",                   version = "5.1.0" }
+spotless                   = { id = "com.diffplug.spotless",                  version = "8.7.0" }

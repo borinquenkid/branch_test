@@ -6,33 +6,39 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "github_user_cache")
 public class CachedUser {
 
-    @Id
-    private String username;
+  @Id private String username;
 
-    @Column(nullable = false)
-    @Convert(converter = UserResponseConverter.class)
-    private UserResponse response;
+  @Column(nullable = false)
+  @Convert(converter = UserResponseConverter.class)
+  private UserResponse response;
 
-    @Column(nullable = false)
-    private OffsetDateTime cachedAt;
+  @Column(nullable = false)
+  private OffsetDateTime cachedAt;
 
-    @SuppressWarnings("NullAway") // Hibernate reflectively populates fields after construction
-    protected CachedUser() {}
+  @SuppressWarnings("NullAway") // Hibernate reflectively populates fields after construction
+  protected CachedUser() {}
 
-    public CachedUser(String username, UserResponse response, OffsetDateTime cachedAt) {
-        this.username = username;
-        this.response = response;
-        this.cachedAt = cachedAt;
-    }
+  public CachedUser(String username, UserResponse response, OffsetDateTime cachedAt) {
+    this.username = username;
+    this.response = response;
+    this.cachedAt = cachedAt;
+  }
 
-    public String getUsername()         { return username; }
-    public UserResponse getResponse()   { return response; }
-    public OffsetDateTime getCachedAt() { return cachedAt; }
+  public String getUsername() {
+    return username;
+  }
+
+  public UserResponse getResponse() {
+    return response;
+  }
+
+  public OffsetDateTime getCachedAt() {
+    return cachedAt;
+  }
 }
