@@ -130,6 +130,7 @@ Architectural decisions live in `docs/adr/`. Before making a significant choice,
 whether an ADR already settles it. If it does, follow it. If it doesn't, write one.
 
 Key decisions already settled:
+
 - Spring Boot 4 / Java 25 / virtual threads — `docs/adr/ADR-0001`
 - Jackson serde + MapStruct field mapping — `docs/adr/ADR-0002`
 - Postgres only (no H2), Caffeine L1 + Postgres L2 cache, Testcontainers — `docs/adr/ADR-0003`
