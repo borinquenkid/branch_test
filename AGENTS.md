@@ -94,31 +94,6 @@ adding coverage alone ever could.
 
 ---
 
-## Confabulation Gates — LLM Output Verification
-
-> An LLM will confidently describe an API, a library behavior, or a system interaction that
-> does not exist. Untestable architecture enables confabulation to ship. If you can't mock it
-> cleanly, you can't verify the LLM's claim. If you can't verify it, you can't ship it.
-
-### The gates (mandatory before acting on any LLM claim)
-
-1. **API / library claims → verify via a real test before use.** If an LLM describes an
-   external API endpoint, a library method signature, or a platform behavior — write a test
-   that exercises it against a real or sandboxed instance before building on top of it. A
-   mock that mirrors a confabulated API proves nothing.
-
-2. **Architecture proposals → run the contrarian loop first.** Before accepting an LLM's
-   structural suggestion, attack it: what breaks, what's cheaper, what assumption is wrong?
-
-3. **"It compiles" is not "it works."** Build verification across all modules is a
-   mandatory gate — a change that breaks a sibling module is not done.
-
-4. **Untestable architecture is a confabulation enabler.** If a component cannot be unit
-   tested with clean mocks, LLM-generated code cannot be verified. Testability is not a
-   nice-to-have — it is the primary defense against confabulation shipping.
-
----
-
 ## Build Verification Protocol
 
 Whenever a task is reported done, verify that **all primary build targets compile and
@@ -166,7 +141,7 @@ Key decisions already settled:
 
 **Product:** Branch coding exercise — GitHub user profile aggregation API.
 **Owner:** Walter Duque de Estrada
-**Stack:** Java 21 / Spring Boot 3 — `src/main/java` (application) + `src/test/java` (tests).
+**Stack:** Java 25 / Spring Boot 4 / Gradle — `src/main/java` (application) + `src/test/java` (tests).
 
 | You want…                              | Read                              | Canon?          |
 |----------------------------------------|-----------------------------------|-----------------|
