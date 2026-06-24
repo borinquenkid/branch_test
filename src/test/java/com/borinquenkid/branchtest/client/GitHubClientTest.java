@@ -43,7 +43,7 @@ class GitHubClientTest {
     void fetchReturnsBothDtos() {
         server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
                 .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
-        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100")).andExpect(method(GET))
                 .andRespond(withSuccess("""
                         [{"name":"Hello-World","url":"https://api.github.com/repos/octocat/Hello-World"}]
                         """, MediaType.APPLICATION_JSON));
@@ -59,7 +59,7 @@ class GitHubClientTest {
     void throwsUserNotFoundExceptionOn404() {
         server.expect(requestTo("https://api.github.com/users/ghost")).andExpect(method(GET))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.NOT_FOUND));
-        server.expect(requestTo("https://api.github.com/users/ghost/repos")).andExpect(method(GET))
+        server.expect(requestTo("https://api.github.com/users/ghost/repos?per_page=100")).andExpect(method(GET))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.fetch("ghost"))
@@ -70,7 +70,7 @@ class GitHubClientTest {
     void throwsGitHubApiExceptionOn500() {
         server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
                 .andRespond(withServerError());
-        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100")).andExpect(method(GET))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.fetch("octocat"))
@@ -78,15 +78,56 @@ class GitHubClientTest {
     }
 
     @Test
+    void fetchStopsAtLastPageWhenLinkHeaderHasNoNextRel() {
+        server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
+                .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100"))
+                .andExpect(method(GET))
+                .andRespond(withSuccess(
+                        "[{\"name\":\"only-repo\",\"url\":\"https://api.github.com/repos/octocat/only-repo\"}]",
+                        MediaType.APPLICATION_JSON)
+                        .header("Link",
+                                "<https://api.github.com/users/octocat/repos?page=1&per_page=100>; rel=\"first\""));
+
+        var result = client.fetch("octocat");
+
+        assertThat(result.repos()).hasSize(1);
+    }
+
+    @Test
     void throwsGitHubApiExceptionForNonHttpNetworkError() {
         server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
                 .andRespond(withException(new IOException("connection reset")));
-        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100")).andExpect(method(GET))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.fetch("octocat"))
                 .isInstanceOf(GitHubApiException.class)
                 .hasMessage("GitHub API call failed");
+    }
+
+    @Test
+    void fetchCombinesAllPagesOfRepos() {
+        server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
+                .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100"))
+                .andExpect(method(GET))
+                .andRespond(withSuccess(
+                        "[{\"name\":\"repo-1\",\"url\":\"https://api.github.com/repos/octocat/repo-1\"}]",
+                        MediaType.APPLICATION_JSON)
+                        .header("Link",
+                                "<https://api.github.com/users/octocat/repos?page=2&per_page=100>; rel=\"next\""));
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?page=2&per_page=100"))
+                .andExpect(method(GET))
+                .andRespond(withSuccess(
+                        "[{\"name\":\"repo-2\",\"url\":\"https://api.github.com/repos/octocat/repo-2\"}]",
+                        MediaType.APPLICATION_JSON));
+
+        var result = client.fetch("octocat");
+
+        assertThat(result.repos()).hasSize(2);
+        assertThat(result.repos().get(0).name()).isEqualTo("repo-1");
+        assertThat(result.repos().get(1).name()).isEqualTo("repo-2");
     }
 
     @Test
@@ -96,7 +137,7 @@ class GitHubClientTest {
         // Set up valid stubs so tasks succeed; the interrupt flag triggers the exception.
         server.expect(requestTo("https://api.github.com/users/octocat")).andExpect(method(GET))
                 .andRespond(withSuccess(USER_JSON, MediaType.APPLICATION_JSON));
-        server.expect(requestTo("https://api.github.com/users/octocat/repos")).andExpect(method(GET))
+        server.expect(requestTo("https://api.github.com/users/octocat/repos?per_page=100")).andExpect(method(GET))
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
 
         Thread.currentThread().interrupt();

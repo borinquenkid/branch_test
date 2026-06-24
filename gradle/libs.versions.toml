@@ -5,6 +5,8 @@ mapstruct                  = "1.6.3"
 testcontainers             = "2.0.5"
 wiremock                   = "3.13.2"
 spring-dotenv              = "4.0.0"
+error-prone                = "2.50.0"
+nullaway                   = "0.13.4"
 
 [libraries]
 # ── Spring Boot (versions managed by the Spring Boot BOM) ────────────────────
@@ -34,7 +36,10 @@ mapstruct                  = { module = "org.mapstruct:mapstruct",           ver
 mapstruct-processor        = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
 wiremock                   = { module = "org.wiremock:wiremock-jetty12",      version.ref = "wiremock" }
 spring-dotenv              = { module = "me.paulschwarz:spring-dotenv",      version.ref = "spring-dotenv" }
+errorprone-core            = { module = "com.google.errorprone:error_prone_core", version.ref = "error-prone" }
+nullaway                   = { module = "com.uber.nullaway:nullaway",         version.ref = "nullaway" }
 
 [plugins]
 spring-boot                = { id = "org.springframework.boot",              version.ref = "spring-boot" }
 spring-dependency-management = { id = "io.spring.dependency-management",    version.ref = "spring-dependency-management" }
+errorprone                 = { id = "net.ltgt.errorprone",                   version = "5.1.0" }

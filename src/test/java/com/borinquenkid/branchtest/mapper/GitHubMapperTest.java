@@ -58,4 +58,17 @@ class GitHubMapperTest {
 
         assertThat(response.email()).isNull();
     }
+
+    @Test
+    void nullCreatedAtPassesThroughAsNull() {
+        var user = new GitHubUser(
+                "octocat", "The Octocat",
+                "https://avatars.githubusercontent.com/u/583231?v=4",
+                "San Francisco", null,
+                "https://api.github.com/users/octocat",
+                null
+        );
+
+        assertThat(mapper.toUserResponse(user, List.of()).createdAt()).isNull();
+    }
 }

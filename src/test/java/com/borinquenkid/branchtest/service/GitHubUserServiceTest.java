@@ -53,7 +53,8 @@ class GitHubUserServiceTest {
 
     @Test
     void l2HitReturnsCachedResponseWithoutCallingApi() {
-        var expected = new UserResponse("octocat", "The Octocat", null, null, null, null, null, List.of());
+        var expected = new UserResponse("octocat", "The Octocat", null, null, null,
+                "https://api.github.com/users/octocat", null, List.of());
 
         when(userCache.findFresh("octocat")).thenReturn(Optional.of(expected));
 

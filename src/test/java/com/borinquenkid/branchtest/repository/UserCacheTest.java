@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,11 +28,12 @@ class UserCacheTest {
     @InjectMocks private UserCache userCache;
 
     private static final UserResponse RESPONSE =
-            new UserResponse("octocat", null, null, null, null, null, null, List.of());
+            new UserResponse("octocat", null, null, null, null,
+                    "https://api.github.com/users/octocat", null, List.of());
 
     @Test
     void findFreshReturnsMappedResponseWhenPresent() {
-        var cached = new CachedUser("octocat", RESPONSE, OffsetDateTime.now());
+        var cached = new CachedUser("octocat", RESPONSE, OffsetDateTime.now(ZoneOffset.UTC));
         when(properties.cache()).thenReturn(cacheProps);
         when(cacheProps.l2TtlHours()).thenReturn(1);
         when(repository.findFreshByUsername(eq("octocat"), any())).thenReturn(Optional.of(cached));

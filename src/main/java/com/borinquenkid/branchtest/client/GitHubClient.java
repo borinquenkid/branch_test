@@ -5,12 +5,16 @@ import com.borinquenkid.branchtest.exception.UserNotFoundException;
 import com.borinquenkid.branchtest.model.github.GitHubRepo;
 import com.borinquenkid.branchtest.model.github.GitHubUser;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.Joiner;
 
@@ -44,10 +48,10 @@ public class GitHubClient {
 
     private GitHubUser fetchUser(String username) {
         try {
-            return restClient.get()
+            return Objects.requireNonNull(restClient.get()
                     .uri("/users/{username}", username)
                     .retrieve()
-                    .body(GitHubUser.class);
+                    .body(GitHubUser.class), "GitHub user API returned empty body");
         } catch (HttpClientErrorException.NotFound e) {
             throw new UserNotFoundException(username);
         } catch (RestClientResponseException e) {
@@ -55,14 +59,37 @@ public class GitHubClient {
         }
     }
 
+    private static final ParameterizedTypeReference<List<GitHubRepo>> REPOS_TYPE =
+            new ParameterizedTypeReference<>() {};
+
     private List<GitHubRepo> fetchRepos(String username) {
         try {
-            return restClient.get()
-                    .uri("/users/{username}/repos", username)
+            List<GitHubRepo> all = new ArrayList<>();
+            var page = restClient.get()
+                    .uri("/users/{username}/repos?per_page=100", username)
                     .retrieve()
-                    .body(new ParameterizedTypeReference<>() {});
+                    .toEntity(REPOS_TYPE);
+            while (true) {
+                if (page.getBody() != null) all.addAll(page.getBody());
+                URI next = nextPageUri(page.getHeaders().getFirst("Link"));
+                if (next == null) break;
+                page = restClient.get().uri(next).retrieve().toEntity(REPOS_TYPE);
+            }
+            return all;
         } catch (RestClientResponseException e) {
             throw new GitHubApiException("GitHub repos API returned " + e.getStatusCode(), e);
         }
+    }
+
+    private static @Nullable URI nextPageUri(@Nullable String linkHeader) {
+        if (linkHeader == null) return null;
+        for (String segment : linkHeader.split(",")) {
+            String[] parts = segment.trim().split(";", 2);
+            if (parts.length == 2 && parts[1].trim().equals("rel=\"next\"")) {
+                String url = parts[0].trim();
+                return URI.create(url.substring(1, url.length() - 1));
+            }
+        }
+        return null;
     }
 }

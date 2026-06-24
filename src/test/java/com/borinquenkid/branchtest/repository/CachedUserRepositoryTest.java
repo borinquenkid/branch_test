@@ -12,6 +12,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,13 +46,14 @@ class CachedUserRepositoryTest {
     private CachedUserRepository repository;
 
     private static final UserResponse SAMPLE =
-            new UserResponse("octocat", "The Octocat", null, null, null, null, null, List.of());
+            new UserResponse("octocat", "The Octocat", null, null, null,
+                    "https://api.github.com/users/octocat", null, List.of());
 
     @Test
     void savesAndRetrievesFreshEntry() {
-        repository.save(new CachedUser("octocat", SAMPLE, OffsetDateTime.now()));
+        repository.save(new CachedUser("octocat", SAMPLE, OffsetDateTime.now(ZoneOffset.UTC)));
 
-        var found = repository.findFreshByUsername("octocat", OffsetDateTime.now().minusHours(1));
+        var found = repository.findFreshByUsername("octocat", OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
 
         assertThat(found).isPresent();
         assertThat(found.get().getUsername()).isEqualTo("octocat");
@@ -61,9 +63,9 @@ class CachedUserRepositoryTest {
 
     @Test
     void returnsEmptyForStaleEntry() {
-        repository.save(new CachedUser("stale", SAMPLE, OffsetDateTime.now().minusHours(2)));
+        repository.save(new CachedUser("stale", SAMPLE, OffsetDateTime.now(ZoneOffset.UTC).minusHours(2)));
 
-        var found = repository.findFreshByUsername("stale", OffsetDateTime.now().minusHours(1));
+        var found = repository.findFreshByUsername("stale", OffsetDateTime.now(ZoneOffset.UTC).minusHours(1));
 
         assertThat(found).isEmpty();
     }

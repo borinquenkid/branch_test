@@ -1,7 +1,11 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
+
 plugins {
     java
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
+    alias(libs.plugins.errorprone)
     jacoco
 }
 
@@ -20,6 +24,16 @@ repositories {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("--enable-preview")
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.errorprone {
+        check("NullAway", CheckSeverity.ERROR)
+        option("NullAway:AnnotatedPackages", "com.borinquenkid.branchtest")
+        option("NullAway:JSpecifyMode", "true")
+        // Skip MapStruct-generated classes; they carry @Generated
+        option("NullAway:ExcludedClassAnnotations", "javax.annotation.processing.Generated")
+    }
 }
 
 tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
@@ -59,6 +73,9 @@ dependencies {
     testImplementation(libs.testcontainers.junit)
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.wiremock)
+
+    errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
 }
 
 tasks.test {

@@ -7,6 +7,7 @@ import com.borinquenkid.branchtest.model.response.UserResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -29,7 +30,8 @@ public interface GitHubMapper {
     RepoResponse toRepoResponse(GitHubRepo repo);
 
     @Named("formatCreatedAt")
-    default String formatCreatedAt(String isoDate) {
+    default @Nullable String formatCreatedAt(@Nullable String isoDate) {
+        if (isoDate == null) return null;
         return Instant.parse(isoDate)
                 .atZone(ZoneOffset.UTC)
                 .format(DateTimeFormatter.RFC_1123_DATE_TIME);

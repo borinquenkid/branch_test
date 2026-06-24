@@ -23,6 +23,7 @@ public class CachedUser {
     @Column(nullable = false)
     private OffsetDateTime cachedAt;
 
+    @SuppressWarnings("NullAway") // Hibernate reflectively populates fields after construction
     protected CachedUser() {}
 
     public CachedUser(String username, UserResponse response, OffsetDateTime cachedAt) {

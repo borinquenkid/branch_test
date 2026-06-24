@@ -5,6 +5,7 @@ import com.borinquenkid.branchtest.model.response.UserResponse;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Component
@@ -19,12 +20,12 @@ public class UserCache {
     }
 
     public Optional<UserResponse> findFresh(String username) {
-        var cutoff = OffsetDateTime.now().minusHours(properties.cache().l2TtlHours());
+        var cutoff = OffsetDateTime.now(ZoneOffset.UTC).minusHours(properties.cache().l2TtlHours());
         return repository.findFreshByUsername(username, cutoff)
                 .map(CachedUser::getResponse);
     }
 
     public void put(String username, UserResponse response) {
-        repository.save(new CachedUser(username, response, OffsetDateTime.now()));
+        repository.save(new CachedUser(username, response, OffsetDateTime.now(ZoneOffset.UTC)));
     }
 }
