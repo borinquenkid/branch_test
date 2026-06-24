@@ -28,7 +28,30 @@ are:
 
 ## Decision
 
-Use **Jackson 2.18+** (auto-configured by Spring Boot 4) with the following configuration:
+Use **the Jackson version managed by Spring Boot 4's dependency BOM** — do not pin a
+version manually. Spring Boot 4's parent POM declares a tested, compatible Jackson bill of
+materials; overriding it is unnecessary and risks misalignment between modules.
+
+### Jackson module version alignment
+
+Jackson's first-party modules (`jackson-databind`, `jackson-datatype-jsr310`,
+`jackson-module-parameter-names`, `jackson-annotations`) ship together on the same version
+and move in lock-step. These are safe to leave under Spring Boot's BOM control.
+
+Some modules have not kept pace with core releases:
+
+- **`jackson-dataformat-*`** (CSV, YAML, CBOR, etc.) — occasionally lags a minor version
+  behind `jackson-databind`. Do not use any of these here; note the lag if added later.
+- **Third-party Jackson modules** (Kotlin, Scala, Guava, etc.) — release on their own
+  cadence and may not support the BOM-managed core version. Verify compatibility before
+  adding. If a module is stuck on an older core, isolate it and document the pin.
+
+For this service the only Jackson dependencies are first-party ones pulled in by
+`spring-boot-starter-web` and `spring-boot-starter-json`. No module version pin is needed.
+
+---
+
+Use the following configuration:
 
 ### Response DTOs — Java records with explicit `@JsonProperty`
 
