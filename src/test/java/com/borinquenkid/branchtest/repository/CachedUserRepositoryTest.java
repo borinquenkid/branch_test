@@ -1,5 +1,6 @@
 package com.borinquenkid.branchtest.repository;
 
+import com.borinquenkid.branchtest.model.response.UserResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,19 +44,22 @@ class CachedUserRepositoryTest {
     @Autowired
     private CachedUserRepository repository;
 
+    private static final UserResponse SAMPLE =
+            new UserResponse("octocat", "The Octocat", null, null, null, null, null, List.of());
+
     @Test
     void savesAndRetrievesFreshEntry() {
-        repository.save(new CachedUser("octocat", "{\"user_name\":\"octocat\"}", OffsetDateTime.now()));
+        repository.save(new CachedUser("octocat", SAMPLE, OffsetDateTime.now()));
 
         var found = repository.findFreshByUsername("octocat", OffsetDateTime.now().minusHours(1));
 
         assertThat(found).isPresent();
-        assertThat(found.get().getResponse()).contains("octocat");
+        assertThat(found.get().getResponse().userName()).isEqualTo("octocat");
     }
 
     @Test
     void returnsEmptyForStaleEntry() {
-        repository.save(new CachedUser("stale", "{\"user_name\":\"stale\"}", OffsetDateTime.now().minusHours(2)));
+        repository.save(new CachedUser("stale", SAMPLE, OffsetDateTime.now().minusHours(2)));
 
         var found = repository.findFreshByUsername("stale", OffsetDateTime.now().minusHours(1));
 

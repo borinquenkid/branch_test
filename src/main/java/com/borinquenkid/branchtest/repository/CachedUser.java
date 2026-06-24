@@ -1,6 +1,8 @@
 package com.borinquenkid.branchtest.repository;
 
+import com.borinquenkid.branchtest.model.response.UserResponse;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -15,23 +17,24 @@ public class CachedUser {
     private String username;
 
     @Column(nullable = false)
-    private String response;
+    @Convert(converter = UserResponseConverter.class)
+    private UserResponse response;
 
     @Column(nullable = false)
     private OffsetDateTime cachedAt;
 
     protected CachedUser() {}
 
-    public CachedUser(String username, String response, OffsetDateTime cachedAt) {
+    public CachedUser(String username, UserResponse response, OffsetDateTime cachedAt) {
         this.username = username;
         this.response = response;
         this.cachedAt = cachedAt;
     }
 
-    public String getUsername()  { return username; }
-    public String getResponse()  { return response; }
+    public String getUsername()         { return username; }
+    public UserResponse getResponse()   { return response; }
     public OffsetDateTime getCachedAt() { return cachedAt; }
 
-    public void setResponse(String response)   { this.response = response; }
+    public void setResponse(UserResponse response)   { this.response = response; }
     public void setCachedAt(OffsetDateTime cachedAt) { this.cachedAt = cachedAt; }
 }
