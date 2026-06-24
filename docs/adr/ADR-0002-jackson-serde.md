@@ -102,99 +102,79 @@ For this service the only Jackson dependencies are first-party ones pulled in by
 
 ---
 
-Use the following configuration:
+### DTOs — Java records
 
-### Response DTOs — Java records with explicit `@JsonProperty`
+Use Java records for all DTO types: immutable by construction, no setters, no accidental
+mutation. Two sets:
 
-Use Java records for all response types. Field renaming is declared with `@JsonProperty`
-on the record component. No naming-strategy annotation — strategy-level renaming is implicit
-and breaks readability; explicit annotations are self-documenting.
+- **GitHub DTOs** (internal) — mirror only the fields we consume from each endpoint.
+  Decorated with `@JsonIgnoreProperties(ignoreUnknown = true)` so GitHub API additions
+  never cause deserialization failures.
+- **Response DTOs** (public) — carry our field names as declared; Jackson serializes them
+  verbatim using `@JsonProperty` annotations on the record components (see Mapping section).
 
-```java
-public record UserResponse(
-    @JsonProperty("user_name")    String userName,
-    @JsonProperty("display_name") String displayName,
-    @JsonProperty("avatar")       String avatar,
-    @JsonProperty("geo_location") String geoLocation,
-                                  String email,        // name matches; no annotation needed
-                                  String url,
-    @JsonProperty("created_at")   String createdAt,
-                                  List<RepoResponse> repos
-) {}
-```
+### Field mapping — MapStruct
+
+Use **MapStruct** to translate GitHub DTOs to response DTOs. MapStruct is an annotation
+processor: it reads `@Mapping` declarations at compile time and generates plain Java
+mapping classes. There is no runtime reflection and the generated code is readable and
+verifiable.
+
+Field renames are declared explicitly on the mapper interface (`source` → `target`).
+The `created_at` reformat is expressed as a named default method on the same interface,
+keeping the date logic co-located with the mapping declarations rather than scattered
+in service code.
+
+MapStruct integrates with Spring via `componentModel = "spring"` — the generated mapper
+is a Spring bean, injectable wherever needed.
+
+### Jackson configuration
+
+`FAIL_ON_UNKNOWN_PROPERTIES = false` is set globally — GitHub returns many fields we do
+not map and strict deserialization would throw on every call.
+
+`WRITE_DATES_AS_TIMESTAMPS = false` ensures any `java.time` type elsewhere in the
+codebase serializes as an ISO 8601 string, not an epoch number. Spring Boot auto-configures
+`JavaTimeModule` when `jackson-datatype-jsr310` is on the classpath (it is, via
+`spring-boot-starter-web`).
 
 ### Date formatting
 
-Parse GitHub's ISO 8601 string with `Instant.parse(...)`, then format with
-`DateTimeFormatter.RFC_1123_DATE_TIME` (zone = UTC). This is pure `java.time` — no
-`SimpleDateFormat`, no `Date`, no timezone ambiguity.
-
-```java
-Instant instant = Instant.parse(githubCreatedAt);          // "2011-01-25T18:44:36Z"
-ZonedDateTime zdt = instant.atZone(ZoneOffset.UTC);
-String formatted = DateTimeFormatter.RFC_1123_DATE_TIME.format(zdt); // "Tue, 25 Jan 2011 18:44:36 GMT"
-```
-
-`created_at` is stored and returned as a plain `String` in the response record — the
-formatting happens in the service layer, not in Jackson. Jackson writes it verbatim.
-
-### ObjectMapper configuration
-
-Register `JavaTimeModule` and disable `WRITE_DATES_AS_TIMESTAMPS` to ensure any `Instant`
-or `ZonedDateTime` fields elsewhere in the codebase serialize to ISO 8601 strings, not
-epoch numbers. Spring Boot 4 auto-configures this when `jackson-datatype-jsr310` is on
-the classpath (it is, via `spring-boot-starter-web`).
-
-```java
-@Bean
-public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
-    return builder -> builder
-        .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .featuresToDisable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-}
-```
-
-`FAIL_ON_UNKNOWN_PROPERTIES = false` is required for the GitHub API response DTOs —
-GitHub returns many fields we do not map; strict deserialization would throw on every call.
-
-### GitHub API response DTOs
-
-Separate, internal-only records that mirror the fields we actually consume. Annotated with
-`@JsonIgnoreProperties(ignoreUnknown = true)` as a belt-and-suspenders guard.
-
-```java
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record GitHubUser(
-    String login,
-    String name,
-    @JsonProperty("avatar_url") String avatarUrl,
-    String location,
-    String email,
-    String url,
-    @JsonProperty("created_at") String createdAt
-) {}
-```
+`created_at` is reformatted in the MapStruct mapper using `java.time` only:
+`Instant.parse` → `atZone(UTC)` → `DateTimeFormatter.RFC_1123_DATE_TIME`. No
+`SimpleDateFormat`, no `Date`, no timezone ambiguity. The result is stored as a plain
+`String` in the response record; Jackson writes it verbatim.
 
 ## Consequences
 
 **Gained:**
-- Explicit `@JsonProperty` annotations make the field contract readable at a glance —
-  no implicit strategy to decode.
-- Java records are immutable by construction; no setters, no accidental mutation.
-- `java.time` formatting is timezone-safe and testable without `Clock` mocking.
+- MapStruct field declarations are self-documenting — every rename is an explicit
+  `source`/`target` pair visible at the mapper interface, not inferred from a naming strategy.
+- Compile-time generation: a missing or mistyped field name is a build error, not a runtime
+  surprise.
+- Java records enforce immutability at the language level.
 - `FAIL_ON_UNKNOWN_PROPERTIES = false` insulates the service from GitHub API additions.
 
 **Accepted trade-offs:**
-- `created_at` as `String` in the response DTO means the date format is set in service code,
-  not enforced by Jackson. A custom serializer would centralize this, but adds indirection
-  for a single field — not worth it at this scale.
+- MapStruct requires an annotation processor entry in the Maven compiler plugin. One extra
+  build configuration step; worth it for compile-time safety.
+- `created_at` as `String` in the response DTO means the format contract lives in the mapper
+  method, not enforced by the type system. Acceptable at this scale.
 
 ## Alternatives considered
 
-**`@JsonNaming(SnakeCaseStrategy.class)`** — converts camelCase to snake_case automatically.
-Rejected: implicit transformation makes the mapping invisible to a reader. A new developer
-cannot see `userName → user_name` without knowing the strategy is active.
+**Manual mapping method** — a plain static method in the service. Zero dependencies, fully
+transparent. Rejected in favour of MapStruct because explicit `@Mapping` declarations
+catch renames and field additions at compile time; a manual method silently accepts a
+wrong constructor argument order.
 
-**`ZonedDateTime` field in response record + custom serializer** — more type-safe but adds
-a Jackson module and a custom `JsonSerializer<ZonedDateTime>` for a single date field.
-Over-engineered for this scope.
+**`@JsonNaming(SnakeCaseStrategy.class)`** — auto-converts camelCase to snake_case.
+Rejected: implicit transformation; a reader cannot see `userName → user_name` without
+knowing the strategy is active.
+
+**ModelMapper** — reflection-based, runtime. Convention-driven mapping breaks on our renames
+anyway, leaving verbose configuration with none of MapStruct's compile-time guarantees.
+Rejected.
+
+**`ZonedDateTime` in the response record + custom Jackson serializer** — more type-safe
+but adds a custom `JsonSerializer` for a single field. Over-engineered for this scope.
