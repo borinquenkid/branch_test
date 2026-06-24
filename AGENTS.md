@@ -46,6 +46,11 @@ its source ever disagree, the source wins; fix the source, not this page.
 - **One fork at a time.** Do the work, run tests, update status, then stop for review.
   Do not start more than one feature branch in a turn.
 
+- **Look up dependency versions — never assume them.** Before pinning any library or
+  plugin version, verify the current release on Maven Central or the project's release
+  page. Assuming a version is outdated or wrong; a wrong assumption that adds a milestone
+  repository or pins a stale artifact wastes build time and misleads readers.
+
 ---
 
 ## CRAP Index — Hard Exit Criterion

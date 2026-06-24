@@ -53,9 +53,6 @@ concurrency.
 **Accepted trade-offs:**
 - Java 25 is the floor. Teams still on Java 21 need a runtime upgrade before running this
   service.
-- Spring Boot 4 GA timeline should be confirmed before pinning a version; use the Spring
-  milestone repository if only RC artifacts are available and pin the exact version in
-  `pom.xml`.
 
 ## Alternatives considered
 
