@@ -76,9 +76,69 @@ com.borinquenkid.branchtest
     └── GitHubUserService.java
 
 src/main/resources/
-├── application.yml
+├── application.yml            ← prod defaults (env var placeholders for secrets)
+├── application-local.yml      ← local dev overrides (local Postgres, debug logging)
+├── application-test.yml       ← test profile (activated by @ActiveProfiles("test") in ITs)
 └── db/migration/
     └── V1__create_github_user_cache.sql
+```
+
+### Configuration profile strategy
+
+| File | When active | Purpose |
+|------|-------------|---------|
+| `application.yml` | Always (base) | Prod defaults; secrets via `${ENV_VAR}` placeholders |
+| `application-local.yml` | `--spring.profiles.active=local` | Local Postgres, verbose logging, relaxed timeouts |
+| `application-test.yml` | `@ActiveProfiles("test")` in ITs | Test-safe defaults; datasource + `github.base-url` overridden by `@DynamicPropertySource` |
+
+**`application.yml` (prod base):**
+```yaml
+spring:
+  application.name: branch-github-api
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+  jpa:
+    hibernate.ddl-auto: validate
+    open-in-view: false
+  flyway.enabled: true
+  cache:
+    type: caffeine
+    caffeine.spec: maximumSize=500,expireAfterWrite=5m
+
+github:
+  base-url: https://api.github.com
+  cache.l2-ttl-hours: 1
+
+logging.level:
+  root: WARN
+  com.borinquenkid: INFO
+```
+
+**`application-local.yml`:**
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/branchtest
+    username: branchtest
+    password: branchtest
+  jpa.show-sql: true
+
+logging.level:
+  com.borinquenkid: DEBUG
+```
+
+**`application-test.yml`:**
+```yaml
+# Datasource and github.base-url are overridden per-test by @DynamicPropertySource.
+# This file sets test-safe defaults for everything else.
+spring:
+  jpa.hibernate.ddl-auto: validate
+  flyway.enabled: true
+
+logging.level:
+  com.borinquenkid: DEBUG
 ```
 
 ---
@@ -98,7 +158,13 @@ boots an empty Spring Boot application. No business logic — just a green build
 - [ ] `.sdkmanrc` pins `java=25.0.3-tem` and `gradle=9.4.1`
 - [ ] `gradlew wrapper` is committed (jar included)
 - [ ] `BranchTestApplication.java` exists with `@SpringBootApplication @EnableCaching`
-- [ ] `application.yml` has app name and datasource placeholder properties
+- [ ] `application.yml` contains prod defaults: datasource via `${ENV_VAR}` placeholders,
+      Caffeine spec (`maximumSize=500,expireAfterWrite=5m`), `github.base-url`,
+      `github.cache.l2-ttl-hours`, `WARN` root logging
+- [ ] `application-local.yml` overrides datasource to local Postgres, enables `show-sql`,
+      sets `DEBUG` logging for `com.borinquenkid`
+- [ ] `application-test.yml` sets test-safe defaults; datasource and `github.base-url`
+      left for `@DynamicPropertySource` to inject per-test
 - [ ] `./gradlew build` succeeds (dependency resolution + compile)
 
 **Verification:**
@@ -114,6 +180,8 @@ boots an empty Spring Boot application. No business logic — just a green build
 - `gradlew`, `gradlew.bat`, `gradle/wrapper/*`
 - `src/main/java/.../BranchTestApplication.java`
 - `src/main/resources/application.yml`
+- `src/main/resources/application-local.yml`
+- `src/main/resources/application-test.yml`
 
 **Scope:** M
 
@@ -429,7 +497,12 @@ service in under 5 minutes. Covers architecture decisions, prerequisites, and th
 
 ## Open Questions
 
-- Should `application.yml` provide a `docker-compose.yml` for local Postgres, or rely on
-  developers running Postgres themselves? (Affects Task 1 and the README)
-- Should the cache TTL values (5 min Caffeine, 1 hr Postgres) be externalised as
-  `application.yml` properties, or hardcoded constants? (Affects Task 6)
+~~Should `application.yml` provide a `docker-compose.yml` for local Postgres, or rely on
+developers running Postgres themselves?~~ **Resolved:** `application-local.yml` points to a
+local Postgres instance. A `docker-compose.yml` will be provided in the repo root for
+developers who want it; running it is optional, not required.
+
+~~Should the cache TTL values (5 min Caffeine, 1 hr Postgres) be externalised as
+`application.yml` properties, or hardcoded constants?~~ **Resolved:** Externalised.
+Caffeine spec lives in `spring.cache.caffeine.spec` in `application.yml`. Postgres L2 TTL
+lives in `github.cache.l2-ttl-hours`. Both can be overridden per profile.
