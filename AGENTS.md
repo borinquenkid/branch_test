@@ -155,9 +155,10 @@ Architectural decisions live in `docs/adr/`. Before making a significant choice,
 whether an ADR already settles it. If it does, follow it. If it doesn't, write one.
 
 Key decisions already settled:
-- Spring Boot 4 / Java 21 / virtual threads — `docs/adr/ADR-0001`
-- Jackson serde — explicit `@JsonProperty`, `java.time` for RFC 1123 date — `docs/adr/ADR-0002`
+- Spring Boot 4 / Java 25 / virtual threads — `docs/adr/ADR-0001`
+- Jackson serde + MapStruct field mapping — `docs/adr/ADR-0002`
 - Postgres only (no H2), Caffeine L1 + Postgres L2 cache, Testcontainers — `docs/adr/ADR-0003`
+- Gradle + Kotlin DSL (no Maven) — `docs/adr/ADR-0004`
 
 ---
 
@@ -175,9 +176,9 @@ Key decisions already settled:
 ### Build targets
 
 ```bash
-./mvnw verify          # compile + all tests
-./mvnw test            # unit tests only
-./mvnw spring-boot:run # run the server
+./gradlew build        # compile + all tests + artifact
+./gradlew test         # unit tests only
+./gradlew bootRun      # run the server
 ```
 
 All must pass on every task completion.
@@ -187,8 +188,8 @@ All must pass on every task completion.
 This project uses JaCoCo for coverage. Generate the report with:
 
 ```bash
-./mvnw test jacoco:report
-# Report: target/site/jacoco/index.html
+./gradlew test jacocoTestReport
+# Report: build/reports/jacoco/test/html/index.html
 ```
 
 CRAP threshold: **15**. Any changed class exceeding this at task completion is a blocker.
