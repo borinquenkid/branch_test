@@ -67,32 +67,29 @@ deleted eagerly (no background job needed at this scale).
 **Unit tests (JUnit 5 + Mockito):** test the service layer with a mocked repository. No
 database, no Spring context. Fast and focused.
 
-**Integration tests (`@SpringBootTest` + Testcontainers):** spin up a real Postgres
-container and a real WireMock server stubbing both GitHub endpoints. Verify the full stack:
-HTTP request → controller → service → repository → Postgres → response JSON shape. These
-tests carry the `IT` suffix (e.g., `GitHubUserControllerIT`).
+**Integration tests (`@SpringBootTest` + programmatic Testcontainers):** spin up a real
+Postgres container and an embedded WireMock server. Both are started in a `static {}`
+initializer — before JUnit touches the class and before Spring initializes its context.
+`@DynamicPropertySource` then injects both URLs. Tests carry the `IT` suffix.
 
-```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class GitHubUserControllerIT {
+**Why programmatic startup instead of `@Container`:**  
+`@Container` delegates lifecycle to the JUnit Testcontainers extension. When combined with
+`@DynamicPropertySource`, there is no guaranteed ordering between the extension starting
+the container and Spring reading the injected properties. A static initializer removes the
+race: containers are running before any JUnit extension or Spring lifecycle hook fires.
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:17");
+**Why `WireMockServer` (embedded) instead of a WireMock container:**  
+WireMock does not need Docker. An in-process `WireMockServer` on a dynamic port is
+lighter, faster to start, and sufficient to stub the two GitHub endpoints. Only Postgres
+requires a real container.
 
-    @DynamicPropertySource
-    static void postgresProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url",      postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-    }
-
-    // WireMock stubs GitHub API; test asserts full response shape and cache behavior
-}
+Startup sequence:
 ```
-
-Testcontainers reuses the container across tests in the same JVM via `@Container` on a
-`static` field — startup cost is paid once per test run, not once per test class.
+static { POSTGRES.start(); GITHUB_API.start(); }   ← before Spring context
+@DynamicPropertySource injects datasource + github.base-url
+Spring context initializes with correct properties
+@AfterAll { GITHUB_API.stop(); POSTGRES.stop(); }
+```
 
 ## Consequences
 

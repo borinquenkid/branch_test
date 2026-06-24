@@ -335,24 +335,41 @@ Add `CacheConfig` to declare the Caffeine cache with a 5-minute TTL.
 
 ### Task 7: Full-stack integration test
 
-**Description:** Write `GitHubUserControllerIT` — a `@SpringBootTest` test that spins up
-a real Postgres container (Testcontainers) and stubs both GitHub endpoints (WireMock).
-Verifies the complete request-to-response path including cache behavior.
+**Description:** Write `GitHubUserControllerIT` — a `@SpringBootTest` test that owns its
+container lifecycle programmatically. `PostgreSQLContainer` (Testcontainers) and
+`WireMockServer` (embedded, no Docker image) are started in a static initializer, before
+Spring initializes its context. `@DynamicPropertySource` then injects both URLs into the
+context. This avoids JUnit extension ordering issues that arise when `@Container` and
+`@DynamicPropertySource` compete to run before Spring starts.
+
+**Lifecycle:**
+```
+static { POSTGRES.start(); GITHUB_API.start(); }   ← before Spring context
+@DynamicPropertySource → inject datasource + github.base-url ← Spring reads these
+Spring context starts with correct properties
+@AfterAll { GITHUB_API.stop(); POSTGRES.stop(); }  ← explicit teardown
+```
+
+`WireMockServer` runs embedded (in-process, dynamic port) — no Docker image needed.
+`PostgreSQLContainer` is the only real container.
 
 **Acceptance criteria:**
-- [ ] Postgres container starts once for the test class (static `@Container`)
+- [ ] `POSTGRES` and `GITHUB_API` are `static final` fields started in a `static {}`
+      block — no `@Container` annotation, no JUnit lifecycle management
+- [ ] `@DynamicPropertySource` injects `spring.datasource.*` from `POSTGRES` and
+      `github.base-url` from `GITHUB_API.baseUrl()`
 - [ ] WireMock stubs `/users/octocat` and `/users/octocat/repos` with realistic payloads
 - [ ] Happy path: `GET /users/octocat` returns `200` with correct JSON shape, all fields
       mapped correctly, `created_at` in RFC 1123 format
-- [ ] Cache hit: second identical request does not call the WireMock stubs (verify via
-      stub call count)
+- [ ] Cache hit: second identical request does not hit the WireMock stubs (verify via
+      stub request count)
 - [ ] 404 path: WireMock returns `404` for unknown user → service returns `404`
 - [ ] 502 path: WireMock returns `500` → service returns `502`
-- [ ] `GET /users/ ` (blank) → `400`
+- [ ] Blank username → `400`
 
 **Verification:**
 - [ ] `./gradlew test` exits 0 — all IT cases pass
-- [ ] Docker must be running — test fails fast with a clear error if not
+- [ ] Docker must be running — Postgres container fails fast with a clear error if not
 
 **Dependencies:** Tasks 4, 5, 6
 
