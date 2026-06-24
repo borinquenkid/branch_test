@@ -32,6 +32,7 @@ dependencies {
     implementation(libs.spring.boot.cache)
     implementation(libs.spring.dotenv)
 
+    implementation(libs.spring.boot.flyway)
     implementation(libs.flyway.core)
     implementation(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql.driver)

@@ -15,6 +15,7 @@ spring-boot-test           = { module = "org.springframework.boot:spring-boot-st
 spring-boot-config-proc    = { module = "org.springframework.boot:spring-boot-configuration-processor" }
 
 # ── Persistence (BOM-managed) ────────────────────────────────────────────────
+spring-boot-flyway         = { module = "org.springframework.boot:spring-boot-flyway" }
 flyway-core                = { module = "org.flywaydb:flyway-core" }
 flyway-postgresql          = { module = "org.flywaydb:flyway-database-postgresql" }
 postgresql-driver          = { module = "org.postgresql:postgresql" }
