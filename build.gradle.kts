@@ -18,6 +18,14 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("--enable-preview")
+}
+
+tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
+    jvmArgs("--enable-preview")
+}
+
 dependencies {
     implementation(libs.spring.boot.web)
     implementation(libs.spring.boot.data.jpa)
@@ -43,6 +51,7 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    jvmArgs("--enable-preview")
     finalizedBy(tasks.jacocoTestReport)
 }
 
@@ -52,4 +61,19 @@ tasks.jacocoTestReport {
         xml.required = true
         html.required = true
     }
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            excludes = listOf("com.borinquenkid.branchtest.BranchTestApplication")
+            limit {
+                minimum = "1.0".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(tasks.jacocoTestCoverageVerification)
 }
