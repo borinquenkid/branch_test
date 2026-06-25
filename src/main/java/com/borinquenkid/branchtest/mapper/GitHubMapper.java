@@ -8,10 +8,10 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.jspecify.annotations.Nullable;
 
 @Mapper(componentModel = "spring")
 public interface GitHubMapper {

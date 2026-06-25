@@ -24,7 +24,7 @@ repositories {
 }
 
 tasks.withType<JavaCompile> {
-    options.compilerArgs.add("--enable-preview")
+    options.compilerArgs.addAll(listOf("--enable-preview", "-Xlint:-preview"))
 }
 
 tasks.withType<JavaCompile>().configureEach {
