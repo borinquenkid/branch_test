@@ -1,6 +1,4 @@
-@NonNullApi
-@NonNullFields
+@NullMarked
 package com.borinquenkid.branchtest.model.github;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
