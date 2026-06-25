@@ -28,6 +28,7 @@ public class GitHubClient {
 
   public record FetchResult(GitHubUser user, List<GitHubRepo> repos) {}
 
+  @SuppressWarnings("preview")
   public FetchResult fetch(String username) {
     try (var scope = StructuredTaskScope.open(Joiner.awaitAllSuccessfulOrThrow())) {
       var userTask = scope.fork(() -> fetchUser(username));
