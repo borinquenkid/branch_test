@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB:       branchtest
+      POSTGRES_USER:     branchtest
+      POSTGRES_PASSWORD: branchtest
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U branchtest -d branchtest"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  app:
+    image: branch-test:smoke
+    environment:
+      DATABASE_URL:      jdbc:postgresql://postgres:5432/branchtest
+      DATABASE_USERNAME: branchtest
+      DATABASE_PASSWORD: branchtest
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
