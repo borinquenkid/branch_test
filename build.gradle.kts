@@ -42,11 +42,11 @@ tasks.named<org.springframework.boot.gradle.tasks.run.BootRun>("bootRun") {
 }
 
 // WireMock requires Jetty 12.0.x; Spring Boot BOM upgrades core Jetty to 12.1.x.
-// Force consistent 12.0.30 in test configurations to avoid NoSuchMethodError at startup.
+// Force consistent 12.0.x in test configurations to avoid NoSuchMethodError at startup.
 configurations.matching { it.name.contains("test", ignoreCase = true) }.all {
     resolutionStrategy.eachDependency {
         if (requested.group.startsWith("org.eclipse.jetty")) {
-            useVersion("12.0.30")
+            useVersion("12.0.36")
         }
     }
 }
