@@ -84,7 +84,7 @@ public class GitHubClient {
 
   private static @Nullable URI nextPageUri(@Nullable String linkHeader) {
     if (linkHeader == null) return null;
-    for (String segment : linkHeader.split(",")) {
+    for (String segment : linkHeader.split(",", -1)) {
       String[] parts = segment.trim().split(";", 2);
       if (parts.length == 2 && parts[1].trim().equals("rel=\"next\"")) {
         String url = parts[0].trim();
