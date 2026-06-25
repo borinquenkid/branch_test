@@ -19,7 +19,7 @@ check() {
 
   response=$(curl -s -w "\n%{http_code}" "$url")
   http_status=$(tail -n1 <<< "$response")
-  body=$(head -n -1 <<< "$response")
+  body=$(sed '$d' <<< "$response")
 
   if [[ "$http_status" -eq "$expected_status" ]]; then
     echo "PASS [$label] → $http_status"
