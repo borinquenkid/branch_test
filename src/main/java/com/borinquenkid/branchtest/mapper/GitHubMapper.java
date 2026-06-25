@@ -11,7 +11,7 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 @Mapper(componentModel = "spring")
 public interface GitHubMapper {

@@ -2,7 +2,7 @@ package com.borinquenkid.branchtest.model.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public record UserResponse(
     @JsonProperty("user_name") String userName,
